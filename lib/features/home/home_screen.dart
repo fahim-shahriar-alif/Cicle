@@ -1,174 +1,300 @@
 import 'package:flutter/material.dart';
 import 'package:circle/main.dart';
-import '../auth/presentation/screens/login_screen.dart';
-import '../profile/presentation/screens/profile_screen.dart';
-import '../circles/presentation/screens/circles_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  Future<void> _signOut(BuildContext context) async {
-    await supabase.auth.signOut();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final user = supabase.auth.currentUser;
     final displayName = user?.userMetadata?['display_name'] ?? 'User';
-    final email = user?.email ?? '';
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Circle'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
-                ),
-              );
-            },
-            tooltip: 'Profile',
-          ),
-        ],
+        backgroundColor: Colors.transparent,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Welcome Icon
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Header
+                Text(
+                  'Welcome back,',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.primary,
+                const SizedBox(height: 4),
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Welcome Message
-              Text(
-                'Welcome to Circle!',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              
-              Text(
-                'Hello, $displayName',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              
-              Text(
-                email,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Success Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                const SizedBox(height: 32),
+
+                // Quick Stats Card
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.celebration,
-                        size: 48,
-                        color: Colors.amber[700],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Authentication Complete!',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'You\'ve successfully logged in. Your Circle app is ready to use!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6C5CE7).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.celebration_rounded,
+                              color: Color(0xFF6C5CE7),
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'You\'re all set!',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D3436),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Your Circle app is ready',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF636E72),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Coming Soon Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue[200]!),
+
+                const SizedBox(height: 24),
+
+                // Quick Actions
+                const Text(
+                  'Quick Actions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-                child: Column(
+                const SizedBox(height: 16),
+
+                Row(
                   children: [
-                    Icon(
-                      Icons.group,
-                      color: Colors.blue[700],
-                      size: 48,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ready to Connect',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.blue[900],
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        icon: Icons.groups_rounded,
+                        title: 'Circles',
+                        subtitle: 'View all',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+                        ),
+                        onTap: () {
+                          // Already on circles tab via bottom nav
+                        },
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create circles, chat, and share memories!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.blue[700],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const CirclesScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.group),
-                      label: const Text('View Circles'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[700],
-                        foregroundColor: Colors.white,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        icon: Icons.chat_bubble_rounded,
+                        title: 'Chat',
+                        subtitle: 'Coming soon',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF6B9D), Color(0xFFFF8E9E)],
+                        ),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Chat feature coming soon!'),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        icon: Icons.photo_library_rounded,
+                        title: 'Memories',
+                        subtitle: 'Coming soon',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00D4FF), Color(0xFF0099FF)],
+                        ),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Memories feature coming soon!'),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        icon: Icons.list_alt_rounded,
+                        title: 'Demands',
+                        subtitle: 'Coming soon',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF51CF66), Color(0xFF69DB7C)],
+                        ),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Demands feature coming soon!'),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Tips Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_rounded,
+                        color: Colors.white.withOpacity(0.9),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Tap on Circles below to create your first circle!',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 32,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+          ],
         ),
       ),
     );

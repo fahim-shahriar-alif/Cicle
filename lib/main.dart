@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/theme/app_theme.dart';
+import 'core/navigation/main_navigation.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/home/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,12 +31,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Circle',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       home: supabase.auth.currentSession != null
-          ? const HomeScreen()
+          ? const MainNavigation()
           : const LoginScreen(),
     );
   }
