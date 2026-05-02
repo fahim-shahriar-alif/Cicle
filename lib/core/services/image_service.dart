@@ -64,10 +64,10 @@ class ImageService {
       // Compress the image
       final compressedImage = await compressImage(imageFile);
 
-      // Generate unique filename
+      // Generate unique filename with user ID as folder
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = '$userId-$timestamp.jpg';
-      final filePath = 'avatars/$fileName';
+      final fileName = 'avatar-$timestamp.jpg';
+      final filePath = '$userId/$fileName';
 
       // Upload to Supabase Storage
       await supabase.storage.from('avatars').uploadBinary(
@@ -95,14 +95,14 @@ class ImageService {
       final uri = Uri.parse(avatarUrl);
       final pathSegments = uri.pathSegments;
       
-      // Find the path after 'avatars'
+      // Find the path after 'object/public/avatars'
       final avatarsIndex = pathSegments.indexOf('avatars');
       if (avatarsIndex == -1 || avatarsIndex >= pathSegments.length - 1) {
         return; // Invalid URL format
       }
 
-      final fileName = pathSegments.sublist(avatarsIndex + 1).join('/');
-      final filePath = 'avatars/$fileName';
+      // Get the path after 'avatars/' (userId/filename)
+      final filePath = pathSegments.sublist(avatarsIndex + 1).join('/');
 
       // Delete from storage
       await supabase.storage.from('avatars').remove([filePath]);
