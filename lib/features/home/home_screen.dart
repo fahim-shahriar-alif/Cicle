@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:circle/main.dart';
 import '../auth/presentation/screens/login_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
+import '../circles/presentation/screens/circles_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -125,24 +126,42 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Icon(
-                      Icons.construction,
+                      Icons.group,
                       color: Colors.blue[700],
+                      size: 48,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'Coming Soon',
+                      'Ready to Connect',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        fontSize: 18,
                         color: Colors.blue[900],
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
-                      'Circles, Chat, Demands, and more features are on the way!',
+                      'Create circles, chat, and share memories!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: Colors.blue[700],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CirclesScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.group),
+                      label: const Text('View Circles'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
                       ),
                     ),
                   ],
