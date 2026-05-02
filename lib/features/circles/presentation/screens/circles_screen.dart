@@ -69,7 +69,6 @@ class _CirclesScreenState extends State<CirclesScreen> {
               decoration: const InputDecoration(
                 labelText: 'Circle Name',
                 hintText: 'e.g., Future Travel',
-                border: OutlineInputBorder(),
               ),
               autofocus: true,
             ),
@@ -79,7 +78,6 @@ class _CirclesScreenState extends State<CirclesScreen> {
               decoration: const InputDecoration(
                 labelText: 'Description (Optional)',
                 hintText: 'What is this circle for?',
-                border: OutlineInputBorder(),
               ),
               maxLines: 3,
             ),
@@ -109,7 +107,7 @@ class _CirclesScreenState extends State<CirclesScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Circle created!')),
+            const SnackBar(content: Text('Circle created! 🎉')),
           );
         }
         
@@ -127,76 +125,133 @@ class _CirclesScreenState extends State<CirclesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Circles'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _createCircle,
-            tooltip: 'Create Circle',
-          ),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: _buildBody(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: _buildBody(),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createCircle,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New Circle'),
+      ),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     if (_error != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('Error: $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadCircles,
-              child: const Text('Retry'),
-            ),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Color(0xFFFF6B6B)),
+              const SizedBox(height: 16),
+              const Text(
+                'Oops! Something went wrong',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF636E72)),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _loadCircles,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_circles.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.group_add,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No circles yet',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first circle to get started',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _createCircle,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Circle'),
-            ),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6C5CE7).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  size: 64,
+                  color: Color(0xFF6C5CE7),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'No circles yet',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Create your first circle to get started',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF636E72),
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _createCircle,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create Circle'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: _loadCircles,
+      color: const Color(0xFF6C5CE7),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _circles.length,
@@ -209,96 +264,148 @@ class _CirclesScreenState extends State<CirclesScreen> {
   }
 
   Widget _buildCircleCard(Circle circle) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: circle.isDefault
-              ? Colors.pink.shade100
-              : Colors.purple.shade100,
-          backgroundImage:
-              circle.avatarUrl != null ? NetworkImage(circle.avatarUrl!) : null,
-          child: circle.avatarUrl == null
-              ? Icon(
-                  circle.isDefault ? Icons.favorite : Icons.group,
-                  color: circle.isDefault ? Colors.pink : Colors.purple,
-                  size: 30,
-                )
-              : null,
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                circle.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => CircleDetailScreen(circleId: circle.id),
               ),
-            ),
-            if (circle.isDefault)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.pink.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Default',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.pink,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (circle.description != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                circle.description!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
               children: [
-                Icon(
-                  Icons.people,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${circle.memberCount} ${circle.memberCount == 1 ? 'member' : 'members'}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: circle.isDefault
+                        ? const LinearGradient(
+                            colors: [Color(0xFFFF6B9D), Color(0xFFFF8E9E)],
+                          )
+                        : const LinearGradient(
+                            colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+                          ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  child: circle.avatarUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            circle.avatarUrl!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          circle.isDefault ? Icons.favorite_rounded : Icons.groups_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              circle.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: Color(0xFF2D3436),
+                              ),
+                            ),
+                          ),
+                          if (circle.isDefault)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFF6B9D), Color(0xFFFF8E9E)],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Default',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (circle.description != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          circle.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF636E72),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.people_rounded,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${circle.memberCount} ${circle.memberCount == 1 ? 'member' : 'members'}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFFB2BEC3),
                 ),
               ],
             ),
-          ],
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => CircleDetailScreen(circleId: circle.id),
-            ),
-          );
-        },
       ),
     );
   }
