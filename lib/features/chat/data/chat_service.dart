@@ -60,7 +60,7 @@ class ChatService {
             'circle_id': circleId,
             'user_id': userId,
             'content': content,
-            'reply_to_id': replyToId,
+            'type': 'text',
           })
           .select()
           .single();
