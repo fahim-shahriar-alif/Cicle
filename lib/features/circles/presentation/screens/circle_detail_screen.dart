@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/circle_service.dart';
 import '../../domain/models/circle.dart';
 import '../../domain/models/circle_member.dart';
+import '../../../chat/presentation/screens/chat_screen.dart';
 
 class CircleDetailScreen extends StatefulWidget {
   final String circleId;
@@ -217,6 +218,22 @@ class _CircleDetailScreenState extends State<CircleDetailScreen> {
             ),
         ],
       ),
+      floatingActionButton: _circle != null
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      circleId: widget.circleId,
+                      circleName: _circle!.name,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_rounded),
+              label: const Text('Chat'),
+            )
+          : null,
       body: _buildBody(),
     );
   }
