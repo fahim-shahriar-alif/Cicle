@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/circles/presentation/screens/circles_screen.dart';
 import '../../features/chat/presentation/screens/circles_chat_list.dart';
+import '../../features/demands/presentation/screens/demands_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -17,6 +18,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const CirclesChatList(),
+    const DemandsScreen(),
     const CirclesScreen(),
     const ProfileScreen(),
   ];
@@ -45,25 +47,26 @@ class _MainNavigationState extends State<MainNavigation> {
               _currentIndex = index;
             });
           },
+          type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_rounded),
-              activeIcon: Icon(Icons.chat_bubble_rounded),
               label: 'Chat',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt_rounded),
+              label: 'Demands',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.groups_rounded),
-              activeIcon: Icon(Icons.groups_rounded),
               label: 'Circles',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
-              activeIcon: Icon(Icons.person_rounded),
               label: 'Profile',
             ),
           ],
