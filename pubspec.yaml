@@ -40,6 +40,12 @@ dependencies:
   
   # Environment variables
   flutter_dotenv: ^5.1.0
+  
+  # Image picker for avatar upload
+  image_picker: ^1.0.7
+  
+  # Image compression
+  image: ^4.1.7
 
 dev_dependencies:
   flutter_test:
