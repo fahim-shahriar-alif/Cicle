@@ -46,3 +46,8 @@ app.*.map.json
 
 # Project planning documentation
 /docs/
+
+# Environment variables (contains secrets!)
+.env
+*.env
+!.env.example
