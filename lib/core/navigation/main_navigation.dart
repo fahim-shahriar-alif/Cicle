@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/circles/presentation/screens/circles_screen.dart';
 import '../../features/chat/presentation/screens/circles_chat_list.dart';
@@ -18,6 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   int _unreadCount = 0;
   final _unreadService = UnreadService();
+  final supabase = Supabase.instance.client;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -31,8 +33,13 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _loadUnreadCount();
-    // Refresh unread count every 30 seconds
-    Future.delayed(const Duration(seconds: 30), _loadUnreadCount);
+    _subscribeToMessages();
+  }
+
+  @override
+  void dispose() {
+    _unsubscribeFromMessages();
+    super.dispose();
   }
 
   Future<void> _loadUnreadCount() async {
@@ -43,8 +50,26 @@ class _MainNavigationState extends State<MainNavigation> {
         _unreadCount = count;
       });
     }
-    // Schedule next refresh
-    Future.delayed(const Duration(seconds: 30), _loadUnreadCount);
+  }
+
+  void _subscribeToMessages() {
+    // Subscribe to all message inserts to update badge in real-time
+    supabase
+        .channel('unread_messages')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          callback: (payload) {
+            // Refresh unread count when new message arrives
+            _loadUnreadCount();
+          },
+        )
+        .subscribe();
+  }
+
+  void _unsubscribeFromMessages() {
+    supabase.removeChannel(supabase.channel('unread_messages'));
   }
 
   @override
