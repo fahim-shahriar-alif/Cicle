@@ -43,8 +43,8 @@ class CircleService {
   /// Create a new circle
   Future<Circle> createCircle({
     required String name,
-    String? description,
-    bool isDefault = false,
+    String type = 'direct',
+    String? theme,
   }) async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -55,9 +55,9 @@ class CircleService {
           .from('circles')
           .insert({
             'name': name,
-            'description': description,
+            'type': type,
+            'theme': theme,
             'created_by': userId,
-            'is_default': isDefault,
           })
           .select()
           .single();
@@ -167,13 +167,13 @@ class CircleService {
   Future<void> updateCircle({
     required String circleId,
     String? name,
-    String? description,
+    String? theme,
     String? avatarUrl,
   }) async {
     try {
       final updates = <String, dynamic>{};
       if (name != null) updates['name'] = name;
-      if (description != null) updates['description'] = description;
+      if (theme != null) updates['theme'] = theme;
       if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
 
       if (updates.isEmpty) return;
@@ -220,8 +220,8 @@ class CircleService {
   Future<Circle> createDuoSpace() async {
     return await createCircle(
       name: 'The Duo Space',
-      description: 'Your private space together ❤️',
-      isDefault: true,
+      type: 'duo',
+      theme: 'default',
     );
   }
 }
