@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:circle/main.dart';
-import '../../../home/home_screen.dart';
+import '../../../../core/navigation/main_navigation.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -54,7 +54,7 @@ class _SignupScreenState extends State<SignupScreen> {
           
           // Navigate to home
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
           );
         }
       }

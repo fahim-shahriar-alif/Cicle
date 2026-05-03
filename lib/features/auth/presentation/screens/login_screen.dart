@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:circle/main.dart';
 import 'signup_screen.dart';
-import '../../../home/home_screen.dart';
+import '../../../../core/navigation/main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
         );
       }
     } catch (e) {
