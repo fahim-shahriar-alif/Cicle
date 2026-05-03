@@ -54,14 +54,21 @@ class ChatService {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
 
+      final messageData = {
+        'circle_id': circleId,
+        'user_id': userId,
+        'content': content,
+        'type': 'text',
+      };
+
+      // Add reply_to_id if provided (requires reply_to_id column in database)
+      if (replyToId != null) {
+        messageData['reply_to_id'] = replyToId;
+      }
+
       final response = await supabase
           .from('messages')
-          .insert({
-            'circle_id': circleId,
-            'user_id': userId,
-            'content': content,
-            'type': 'text',
-          })
+          .insert(messageData)
           .select()
           .single();
 
