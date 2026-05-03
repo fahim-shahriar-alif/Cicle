@@ -402,7 +402,7 @@ class _CirclesChatListState extends State<CirclesChatList> {
       try {
         await _circleService.createCircle(
           name: nameController.text,
-          type: 'direct',
+          type: 'themed',
           theme: themeController.text.isEmpty ? null : themeController.text,
         );
         
