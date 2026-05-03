@@ -26,24 +26,35 @@ class ChatService {
       // Get user details separately for each message
       final messages = <Message>[];
       for (final data in response) {
+        String? senderName;
+        String? senderAvatar;
+        String? senderStatus;
+
         try {
           // Get user details from users table
           final userResponse = await supabase
               .from('users')
-              .select('display_name, avatar_url, status')
+              .select('display_name, avatar_url, status, email')
               .eq('id', data['user_id'])
               .maybeSingle();
 
-          messages.add(Message.fromJson({
-            ...data,
-            'sender_name': userResponse?['display_name'],
-            'sender_avatar': userResponse?['avatar_url'],
-            'sender_status': userResponse?['status'],
-          }));
+          if (userResponse != null) {
+            senderName = userResponse['display_name'] ?? userResponse['email']?.split('@')[0];
+            senderAvatar = userResponse['avatar_url'];
+            senderStatus = userResponse['status'];
+          }
         } catch (e) {
-          // If user fetch fails, add message without user details
-          messages.add(Message.fromJson(data));
+          print('Error fetching user details: $e');
+          // Use a fallback name
+          senderName = 'User';
         }
+
+        messages.add(Message.fromJson({
+          ...data,
+          'sender_name': senderName,
+          'sender_avatar': senderAvatar,
+          'sender_status': senderStatus,
+        }));
       }
 
       return messages;
@@ -107,18 +118,33 @@ class ChatService {
           .eq('id', messageId)
           .single();
 
-      // Get user details from users table
-      final userResponse = await supabase
-          .from('users')
-          .select('display_name, avatar_url, status')
-          .eq('id', response['user_id'])
-          .maybeSingle();
+      String? senderName;
+      String? senderAvatar;
+      String? senderStatus;
+
+      try {
+        // Get user details from users table
+        final userResponse = await supabase
+            .from('users')
+            .select('display_name, avatar_url, status, email')
+            .eq('id', response['user_id'])
+            .maybeSingle();
+
+        if (userResponse != null) {
+          senderName = userResponse['display_name'] ?? userResponse['email']?.split('@')[0];
+          senderAvatar = userResponse['avatar_url'];
+          senderStatus = userResponse['status'];
+        }
+      } catch (e) {
+        print('Error fetching user details: $e');
+        senderName = 'User';
+      }
 
       return Message.fromJson({
         ...response,
-        'sender_name': userResponse?['display_name'],
-        'sender_avatar': userResponse?['avatar_url'],
-        'sender_status': userResponse?['status'],
+        'sender_name': senderName,
+        'sender_avatar': senderAvatar,
+        'sender_status': senderStatus,
       });
     } catch (e) {
       return null;
