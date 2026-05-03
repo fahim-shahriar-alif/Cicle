@@ -10,26 +10,36 @@ class PhotoService {
   /// Get photos for a circle
   Future<List<Photo>> getCirclePhotos(String circleId) async {
     try {
+      // Get photos from the circle (without user join for now)
       final response = await supabase
           .from('photos')
-          .select('''
-            *,
-            users!inner(
-              display_name,
-              avatar_url
-            )
-          ''')
+          .select('*')
           .eq('circle_id', circleId)
           .order('taken_at', ascending: false);
 
-      return response.map((data) {
-        final userData = data['users'];
-        return Photo.fromJson({
-          ...data,
-          'uploader_name': userData['display_name'],
-          'uploader_avatar': userData['avatar_url'],
-        });
-      }).toList();
+      // Get user details separately
+      final photos = <Photo>[];
+      for (final data in response) {
+        try {
+          // Get user details from users table
+          final userResponse = await supabase
+              .from('users')
+              .select('display_name, avatar_url')
+              .eq('id', data['user_id'])
+              .maybeSingle();
+
+          photos.add(Photo.fromJson({
+            ...data,
+            'uploader_name': userResponse?['display_name'],
+            'uploader_avatar': userResponse?['avatar_url'],
+          }));
+        } catch (e) {
+          // If user fetch fails, add photo without user details
+          photos.add(Photo.fromJson(data));
+        }
+      }
+
+      return photos;
     } catch (e) {
       throw Exception('Failed to load photos: $e');
     }
@@ -53,27 +63,36 @@ class PhotoService {
 
       if (circleIds.isEmpty) return [];
 
-      // Get photos from those circles
+      // Get photos from those circles (without user join for now)
       final response = await supabase
           .from('photos')
-          .select('''
-            *,
-            users!inner(
-              display_name,
-              avatar_url
-            )
-          ''')
+          .select('*')
           .inFilter('circle_id', circleIds)
           .order('taken_at', ascending: false);
 
-      return response.map((data) {
-        final userData = data['users'];
-        return Photo.fromJson({
-          ...data,
-          'uploader_name': userData['display_name'],
-          'uploader_avatar': userData['avatar_url'],
-        });
-      }).toList();
+      // Get user details separately
+      final photos = <Photo>[];
+      for (final data in response) {
+        try {
+          // Get user details from users table
+          final userResponse = await supabase
+              .from('users')
+              .select('display_name, avatar_url')
+              .eq('id', data['user_id'])
+              .maybeSingle();
+
+          photos.add(Photo.fromJson({
+            ...data,
+            'uploader_name': userResponse?['display_name'],
+            'uploader_avatar': userResponse?['avatar_url'],
+          }));
+        } catch (e) {
+          // If user fetch fails, add photo without user details
+          photos.add(Photo.fromJson(data));
+        }
+      }
+
+      return photos;
     } catch (e) {
       throw Exception('Failed to load photos: $e');
     }
