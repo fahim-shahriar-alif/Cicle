@@ -19,26 +19,34 @@ class ChatService {
     try {
       final response = await supabase
           .from('messages')
-          .select('''
-            *,
-            users!inner(
-              display_name,
-              avatar_url,
-              status
-            )
-          ''')
+          .select('*')
           .eq('circle_id', circleId)
           .order('created_at', ascending: true);
 
-      return response.map((data) {
-        final userData = data['users'];
-        return Message.fromJson({
-          ...data,
-          'sender_name': userData['display_name'],
-          'sender_avatar': userData['avatar_url'],
-          'sender_status': userData['status'],
-        });
-      }).toList();
+      // Get user details separately for each message
+      final messages = <Message>[];
+      for (final data in response) {
+        try {
+          // Get user details from users table
+          final userResponse = await supabase
+              .from('users')
+              .select('display_name, avatar_url, status')
+              .eq('id', data['user_id'])
+              .maybeSingle();
+
+          messages.add(Message.fromJson({
+            ...data,
+            'sender_name': userResponse?['display_name'],
+            'sender_avatar': userResponse?['avatar_url'],
+            'sender_status': userResponse?['status'],
+          }));
+        } catch (e) {
+          // If user fetch fails, add message without user details
+          messages.add(Message.fromJson(data));
+        }
+      }
+
+      return messages;
     } catch (e) {
       throw Exception('Failed to load messages: $e');
     }
@@ -95,23 +103,22 @@ class ChatService {
     try {
       final response = await supabase
           .from('messages')
-          .select('''
-            *,
-            users!inner(
-              display_name,
-              avatar_url,
-              status
-            )
-          ''')
+          .select('*')
           .eq('id', messageId)
           .single();
 
-      final userData = response['users'];
+      // Get user details from users table
+      final userResponse = await supabase
+          .from('users')
+          .select('display_name, avatar_url, status')
+          .eq('id', response['user_id'])
+          .maybeSingle();
+
       return Message.fromJson({
         ...response,
-        'sender_name': userData['display_name'],
-        'sender_avatar': userData['avatar_url'],
-        'sender_status': userData['status'],
+        'sender_name': userResponse?['display_name'],
+        'sender_avatar': userResponse?['avatar_url'],
+        'sender_status': userResponse?['status'],
       });
     } catch (e) {
       return null;
