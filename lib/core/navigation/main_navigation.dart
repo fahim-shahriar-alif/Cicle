@@ -3,6 +3,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/circles/presentation/screens/circles_screen.dart';
 import '../../features/chat/presentation/screens/circles_chat_list.dart';
 import '../../features/demands/presentation/screens/demands_screen.dart';
+import '../../features/memories/presentation/screens/memories_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -19,7 +20,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const HomeScreen(),
     const CirclesChatList(),
     const DemandsScreen(),
-    const CirclesScreen(),
+    const MemoriesScreen(),
     const ProfileScreen(),
   ];
 
@@ -62,8 +63,8 @@ class _MainNavigationState extends State<MainNavigation> {
               label: 'Demands',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.groups_rounded),
-              label: 'Circles',
+              icon: Icon(Icons.photo_library_rounded),
+              label: 'Memories',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
