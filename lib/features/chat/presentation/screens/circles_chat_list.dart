@@ -75,6 +75,12 @@ class _CirclesChatListState extends State<CirclesChatList> {
           child: _buildBody(),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showCreateCircleDialog,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New Circle'),
+        backgroundColor: const Color(0xFF6C5CE7),
+      ),
     );
   }
 
@@ -212,6 +218,9 @@ class _CirclesChatListState extends State<CirclesChatList> {
               ),
             );
           },
+          onLongPress: () {
+            _showCircleOptions(circle);
+          },
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -305,5 +314,194 @@ class _CirclesChatListState extends State<CirclesChatList> {
         ),
       ),
     );
+  }
+
+  void _showCircleOptions(Circle circle) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_add_rounded, color: Color(0xFF6C5CE7)),
+              title: const Text('Invite User'),
+              subtitle: const Text('Add someone to this circle'),
+              onTap: () {
+                Navigator.pop(context);
+                _showInviteUserDialog(circle);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_rounded, color: Color(0xFF6C5CE7)),
+              title: const Text('Open Chat'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      circleId: circle.id,
+                      circleName: circle.name,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCreateCircleDialog() async {
+    final nameController = TextEditingController();
+    final themeController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Circle'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Circle Name',
+                hintText: 'e.g., Family, Friends, Work',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: themeController,
+              decoration: const InputDecoration(
+                labelText: 'Theme (optional)',
+                hintText: 'e.g., Travel, Planning',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && nameController.text.isNotEmpty) {
+      try {
+        await _circleService.createCircle(
+          name: nameController.text,
+          type: 'direct',
+          theme: themeController.text.isEmpty ? null : themeController.text,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Circle created! 🎉')),
+          );
+        }
+        
+        _loadCircles();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showInviteUserDialog(Circle circle) async {
+    final emailController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Invite to ${circle.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter the email address of the user you want to invite:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                hintText: 'user@example.com',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Invite'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && emailController.text.isNotEmpty) {
+      try {
+        // Get user ID by email
+        final supabase = Supabase.instance.client;
+        final userResponse = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', emailController.text.trim())
+            .maybeSingle();
+
+        if (userResponse == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('User not found with that email')),
+            );
+          }
+          return;
+        }
+
+        // Add user to circle
+        await _circleService.addMember(
+          circleId: circle.id,
+          userId: userResponse['id'],
+          role: 'member',
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${emailController.text} added to circle! 🎉')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString().contains('duplicate') ? 'User is already in this circle' : e}')),
+          );
+        }
+      }
+    }
   }
 }
