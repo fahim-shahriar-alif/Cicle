@@ -109,7 +109,7 @@ class ChatService {
         'circle_id': data['circle_id'],
         'user_id': data['user_id'],
         'content': data['content'],
-        'reply_to_id': null,
+        'reply_to_id': data['reply_to_id'],
         'created_at': data['created_at'],
         'sender_name': data['sender_name'],
         'sender_avatar': data['sender_avatar'],
@@ -118,6 +118,8 @@ class ChatService {
     } catch (e) {
       print('Error fetching message: $e');
       return null;
+    }
+  }
     }
   }
 
