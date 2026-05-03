@@ -466,27 +466,28 @@ class _CirclesChatListState extends State<CirclesChatList> {
 
     if (result == true && emailController.text.isNotEmpty) {
       try {
-        // Get user ID by email
+        // Get user ID by email using the database function
         final supabase = Supabase.instance.client;
-        final userResponse = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', emailController.text.trim())
-            .maybeSingle();
+        
+        final response = await supabase.rpc('get_user_id_by_email', params: {
+          'email_param': emailController.text.trim(),
+        });
 
-        if (userResponse == null) {
+        if (response == null || (response is List && response.isEmpty)) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('User not found with that email')),
+              const SnackBar(content: Text('User not found. Make sure they have signed up first!')),
             );
           }
           return;
         }
 
+        final userId = response is List ? response.first['user_id'] : response['user_id'];
+
         // Add user to circle
         await _circleService.addMember(
           circleId: circle.id,
-          userId: userResponse['id'],
+          userId: userId,
           role: 'member',
         );
 
