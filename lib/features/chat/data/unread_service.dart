@@ -20,25 +20,25 @@ class UnreadService {
       final lastSeenAt = lastSeenResponse?['last_seen_at'];
 
       // Count messages after last seen
-      final countResponse = await supabase
-          .from('messages')
-          .select('id', const FetchOptions(count: CountOption.exact, head: true))
-          .eq('circle_id', circleId)
-          .neq('user_id', userId); // Don't count own messages
-
       if (lastSeenAt != null) {
-        // Only count messages after last seen
-        final count = await supabase
+        final messages = await supabase
             .from('messages')
-            .select('id', const FetchOptions(count: CountOption.exact, head: true))
+            .select('id')
             .eq('circle_id', circleId)
             .neq('user_id', userId)
             .gt('created_at', lastSeenAt);
         
-        return count.count ?? 0;
+        return messages.length;
       }
 
-      return countResponse.count ?? 0;
+      // Count all messages from others if never seen
+      final messages = await supabase
+          .from('messages')
+          .select('id')
+          .eq('circle_id', circleId)
+          .neq('user_id', userId);
+
+      return messages.length;
     } catch (e) {
       print('Error getting unread count: $e');
       return 0;
@@ -64,23 +64,23 @@ class UnreadService {
         final lastSeenAt = row['last_seen_at'];
 
         if (lastSeenAt != null) {
-          final count = await supabase
+          final messages = await supabase
               .from('messages')
-              .select('id', const FetchOptions(count: CountOption.exact, head: true))
+              .select('id')
               .eq('circle_id', circleId)
               .neq('user_id', userId)
               .gt('created_at', lastSeenAt);
           
-          totalUnread += count.count ?? 0;
+          totalUnread += messages.length;
         } else {
           // If never seen, count all messages from others
-          final count = await supabase
+          final messages = await supabase
               .from('messages')
-              .select('id', const FetchOptions(count: CountOption.exact, head: true))
+              .select('id')
               .eq('circle_id', circleId)
               .neq('user_id', userId);
           
-          totalUnread += count.count ?? 0;
+          totalUnread += messages.length;
         }
       }
 
