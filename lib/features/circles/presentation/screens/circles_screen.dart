@@ -100,7 +100,8 @@ class _CirclesScreenState extends State<CirclesScreen> {
       try {
         await _circleService.createCircle(
           name: nameController.text,
-          description: descriptionController.text.isEmpty
+          type: 'direct',
+          theme: descriptionController.text.isEmpty
               ? null
               : descriptionController.text,
         );

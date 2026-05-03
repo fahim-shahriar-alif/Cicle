@@ -112,7 +112,7 @@ class _CircleDetailScreenState extends State<CircleDetailScreen> {
         await _circleService.updateCircle(
           circleId: widget.circleId,
           name: nameController.text,
-          description: descriptionController.text.isEmpty
+          theme: descriptionController.text.isEmpty
               ? null
               : descriptionController.text,
         );
