@@ -17,45 +17,26 @@ class ChatService {
   /// Get messages for a circle (one-time fetch)
   Future<List<Message>> getMessages(String circleId) async {
     try {
-      final response = await supabase
-          .from('messages')
-          .select('*')
-          .eq('circle_id', circleId)
-          .order('created_at', ascending: true);
+      // Use database function to get messages with user details in one query
+      final response = await supabase.rpc('get_messages_with_users', params: {
+        'circle_id_param': circleId,
+      });
 
-      // Get user details separately for each message
-      final messages = <Message>[];
-      for (final data in response) {
-        String? senderName;
-        String? senderAvatar;
-        String? senderStatus;
+      if (response == null) return [];
 
-        try {
-          // Get user details from users table
-          final userResponse = await supabase
-              .from('users')
-              .select('display_name, avatar_url, status, email')
-              .eq('id', data['user_id'])
-              .maybeSingle();
-
-          if (userResponse != null) {
-            senderName = userResponse['display_name'] ?? userResponse['email']?.split('@')[0];
-            senderAvatar = userResponse['avatar_url'];
-            senderStatus = userResponse['status'];
-          }
-        } catch (e) {
-          print('Error fetching user details: $e');
-          // Use a fallback name
-          senderName = 'User';
-        }
-
-        messages.add(Message.fromJson({
-          ...data,
-          'sender_name': senderName,
-          'sender_avatar': senderAvatar,
-          'sender_status': senderStatus,
-        }));
-      }
+      final messages = (response as List).map((data) {
+        return Message.fromJson({
+          'id': data['id'],
+          'circle_id': data['circle_id'],
+          'user_id': data['user_id'],
+          'content': data['content'],
+          'reply_to_id': data['reply_to_id'],
+          'created_at': data['created_at'],
+          'sender_name': data['sender_name'],
+          'sender_avatar': data['sender_avatar'],
+          'sender_status': data['sender_status'],
+        });
+      }).toList();
 
       return messages;
     } catch (e) {
