@@ -32,9 +32,49 @@ class MyApp extends StatelessWidget {
       title: 'Circle',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: supabase.auth.currentSession != null
-          ? const MainNavigation()
-          : const LoginScreen(),
+      home: const AuthGate(),
     );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    // Wait a bit for Supabase to initialize
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    final session = supabase.auth.currentSession;
+    setState(() {
+      _isLoggedIn = session != null;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return _isLoggedIn ? const MainNavigation() : const LoginScreen();
   }
 }
