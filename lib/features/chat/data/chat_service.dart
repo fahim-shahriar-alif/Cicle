@@ -120,8 +120,6 @@ class ChatService {
       return null;
     }
   }
-    }
-  }
 
   /// Subscribe to new messages in a circle
   RealtimeChannel subscribeToMessages(
