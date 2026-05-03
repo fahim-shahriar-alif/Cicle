@@ -44,7 +44,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Future<void> _loadUnreadCount() async {
     if (!mounted) return;
+    print('Loading unread count...');
     final count = await _unreadService.getTotalUnreadCount();
+    print('Unread count: $count');
     if (mounted) {
       setState(() {
         _unreadCount = count;
@@ -53,6 +55,7 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _subscribeToMessages() {
+    print('Subscribing to message updates...');
     // Subscribe to all message inserts to update badge in real-time
     supabase
         .channel('unread_messages')
@@ -61,6 +64,7 @@ class _MainNavigationState extends State<MainNavigation> {
           schema: 'public',
           table: 'messages',
           callback: (payload) {
+            print('New message received! Refreshing badge...');
             // Refresh unread count when new message arrives
             _loadUnreadCount();
           },
