@@ -90,44 +90,33 @@ class ChatService {
     }
   }
 
-  /// Get a single message (for replies)
+  /// Get a single message (for replies and real-time)
   Future<Message?> getMessage(String messageId) async {
     try {
-      final response = await supabase
-          .from('messages')
-          .select('*')
-          .eq('id', messageId)
-          .single();
+      // Use the database function to get message with user details
+      final response = await supabase.rpc('get_message_with_user', params: {
+        'message_id_param': messageId,
+      });
 
-      String? senderName;
-      String? senderAvatar;
-      String? senderStatus;
-
-      try {
-        // Get user details from users table
-        final userResponse = await supabase
-            .from('users')
-            .select('display_name, avatar_url, status, email')
-            .eq('id', response['user_id'])
-            .maybeSingle();
-
-        if (userResponse != null) {
-          senderName = userResponse['display_name'] ?? userResponse['email']?.split('@')[0];
-          senderAvatar = userResponse['avatar_url'];
-          senderStatus = userResponse['status'];
-        }
-      } catch (e) {
-        print('Error fetching user details: $e');
-        senderName = 'User';
+      if (response == null || (response is List && response.isEmpty)) {
+        return null;
       }
 
+      final data = response is List ? response.first : response;
+
       return Message.fromJson({
-        ...response,
-        'sender_name': senderName,
-        'sender_avatar': senderAvatar,
-        'sender_status': senderStatus,
+        'id': data['id'],
+        'circle_id': data['circle_id'],
+        'user_id': data['user_id'],
+        'content': data['content'],
+        'reply_to_id': null,
+        'created_at': data['created_at'],
+        'sender_name': data['sender_name'],
+        'sender_avatar': data['sender_avatar'],
+        'sender_status': data['sender_status'],
       });
     } catch (e) {
+      print('Error fetching message: $e');
       return null;
     }
   }
