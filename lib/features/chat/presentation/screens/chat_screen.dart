@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/chat_service.dart';
+import '../../data/unread_service.dart';
 import '../../domain/models/message.dart';
 import 'package:intl/intl.dart';
 
@@ -20,6 +21,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _chatService = ChatService();
+  final _unreadService = UnreadService();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final supabase = Supabase.instance.client;
@@ -35,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadMessages();
     _subscribeToMessages();
+    _markAsRead();
   }
 
   @override
@@ -45,6 +48,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _chatService.unsubscribe(_channel!);
     }
     super.dispose();
+  }
+
+  Future<void> _markAsRead() async {
+    await _unreadService.markAsRead(widget.circleId);
   }
 
   Future<void> _loadMessages() async {

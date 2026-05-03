@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/circles/presentation/screens/circles_screen.dart';
 import '../../features/chat/presentation/screens/circles_chat_list.dart';
+import '../../features/chat/data/unread_service.dart';
 import '../../features/demands/presentation/screens/demands_screen.dart';
 import '../../features/memories/presentation/screens/memories_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -15,6 +16,8 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  int _unreadCount = 0;
+  final _unreadService = UnreadService();
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -23,6 +26,26 @@ class _MainNavigationState extends State<MainNavigation> {
     const MemoriesScreen(),
     const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadCount();
+    // Refresh unread count every 30 seconds
+    Future.delayed(const Duration(seconds: 30), _loadUnreadCount);
+  }
+
+  Future<void> _loadUnreadCount() async {
+    if (!mounted) return;
+    final count = await _unreadService.getTotalUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadCount = count;
+      });
+    }
+    // Schedule next refresh
+    Future.delayed(const Duration(seconds: 30), _loadUnreadCount);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,26 +70,35 @@ class _MainNavigationState extends State<MainNavigation> {
             setState(() {
               _currentIndex = index;
             });
+            // Refresh unread count when switching tabs
+            if (index == 1) {
+              _loadUnreadCount();
+            }
           },
           type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_rounded),
+              icon: _unreadCount > 0
+                  ? Badge(
+                      label: Text(_unreadCount > 99 ? '99+' : '$_unreadCount'),
+                      child: const Icon(Icons.chat_bubble_rounded),
+                    )
+                  : const Icon(Icons.chat_bubble_rounded),
               label: 'Chat',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.list_alt_rounded),
               label: 'Demands',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.photo_library_rounded),
               label: 'Memories',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
               label: 'Profile',
             ),
