@@ -273,6 +273,56 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         ),
                       ),
+                    // Show reply preview if this is a reply
+                    if (message.isReply)
+                      FutureBuilder<Message?>(
+                        future: _chatService.getMessage(message.replyToId!),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data != null) {
+                            final repliedMsg = snapshot.data!;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isMe 
+                                    ? Colors.white.withOpacity(0.2)
+                                    : const Color(0xFF6C5CE7).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border(
+                                  left: BorderSide(
+                                    color: isMe ? Colors.white : const Color(0xFF6C5CE7),
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    repliedMsg.senderName ?? 'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isMe ? Colors.white : const Color(0xFF6C5CE7),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    repliedMsg.content,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isMe ? Colors.white70 : const Color(0xFF636E72),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     Text(
                       message.content,
                       style: TextStyle(
