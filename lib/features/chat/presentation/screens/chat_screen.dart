@@ -47,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_channel != null) {
       _chatService.unsubscribe(_channel!);
     }
+    // Mark as read when leaving the chat
+    _markAsRead();
     super.dispose();
   }
 

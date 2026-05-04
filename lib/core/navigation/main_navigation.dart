@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/home/home_screen.dart';
-import '../../features/circles/presentation/screens/circles_screen.dart';
 import '../../features/chat/presentation/screens/circles_chat_list.dart';
 import '../../features/chat/data/unread_service.dart';
 import '../../features/demands/presentation/screens/demands_screen.dart';
@@ -56,6 +55,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _subscribeToMessages() {
     print('Subscribing to message updates...');
+    final currentUserId = supabase.auth.currentUser?.id;
+    print('Current user ID: $currentUserId');
+    
     // Subscribe to all message inserts to update badge in real-time
     supabase
         .channel('unread_messages')
@@ -64,12 +66,26 @@ class _MainNavigationState extends State<MainNavigation> {
           schema: 'public',
           table: 'messages',
           callback: (payload) {
-            print('New message received! Refreshing badge...');
-            // Refresh unread count when new message arrives
-            _loadUnreadCount();
+            print('New message received!');
+            print('Message data: ${payload.newRecord}');
+            final messageUserId = payload.newRecord['user_id'] as String?;
+            print('Message from user: $messageUserId');
+            
+            // Only update badge if message is from another user
+            if (messageUserId != currentUserId) {
+              print('Message is from another user, refreshing badge...');
+              _loadUnreadCount();
+            } else {
+              print('Message is from current user, skipping badge update');
+            }
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          print('Subscription status: $status');
+          if (error != null) {
+            print('Subscription error: $error');
+          }
+        });
   }
 
   void _unsubscribeFromMessages() {
@@ -79,9 +95,16 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          // Refresh badge when returning from any screen
+          print('User navigating back, refreshing badge...');
+          _loadUnreadCount();
+        },
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -96,13 +119,13 @@ class _MainNavigationState extends State<MainNavigation> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
+            print('Switching to tab: $index');
             setState(() {
               _currentIndex = index;
             });
-            // Refresh unread count when switching tabs
-            if (index == 1) {
-              _loadUnreadCount();
-            }
+            // Refresh unread count when switching to any tab
+            print('Refreshing badge after tab switch...');
+            _loadUnreadCount();
           },
           type: BottomNavigationBarType.fixed,
           items: [
