@@ -64,7 +64,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages = messages;
         _isLoading = false;
       });
-      _scrollToBottom();
+      // With reverse ListView, latest messages automatically appear at bottom
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -82,30 +82,15 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages.add(message);
         });
-        _scrollToBottom();
+        // With reverse ListView, new messages automatically appear at bottom
       },
     );
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
-        }
-      });
-    } else {
-      // If controller doesn't have clients yet, try again after build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
-        }
-      });
-    }
+    // With reverse: true ListView, we don't need to scroll to bottom
+    // The latest messages automatically appear at the bottom
+    // This method is kept for compatibility but does nothing
   }
 
   Future<void> _sendMessage() async {
@@ -162,13 +147,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? _buildEmptyState()
                     : ListView.builder(
                         controller: _scrollController,
+                        reverse: true, // Show latest messages at bottom
                         padding: const EdgeInsets.all(16),
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
-                          final message = _messages[index];
+                          // Reverse the index to show messages in correct order
+                          final reversedIndex = _messages.length - 1 - index;
+                          final message = _messages[reversedIndex];
                           final isMe = message.userId == supabase.auth.currentUser?.id;
-                          final showAvatar = index == 0 ||
-                              _messages[index - 1].userId != message.userId;
+                          
+                          // Check if we should show avatar (first message from user in sequence)
+                          final showAvatar = reversedIndex == _messages.length - 1 ||
+                              _messages[reversedIndex + 1].userId != message.userId;
                           
                           return _buildMessageBubble(message, isMe, showAvatar);
                         },
