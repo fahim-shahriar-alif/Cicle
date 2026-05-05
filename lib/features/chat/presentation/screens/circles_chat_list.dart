@@ -3,6 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../circles/data/circle_service.dart';
 import '../../../circles/domain/models/circle.dart';
 import 'chat_screen.dart';
+import 'direct_messages_screen.dart';
+import 'user_search_screen.dart';
+import 'direct_chat_screen.dart';
+import '../../data/direct_message_service.dart';
 
 class CirclesChatList extends StatefulWidget {
   const CirclesChatList({super.key});
@@ -11,16 +15,28 @@ class CirclesChatList extends StatefulWidget {
   State<CirclesChatList> createState() => _CirclesChatListState();
 }
 
-class _CirclesChatListState extends State<CirclesChatList> {
+class _CirclesChatListState extends State<CirclesChatList> with SingleTickerProviderStateMixin {
   final _circleService = CircleService();
   List<Circle> _circles = [];
   bool _isLoading = true;
   String? _error;
+  
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild to update FAB
+    });
     _loadCircles();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCircles() async {
@@ -62,6 +78,22 @@ class _CirclesChatListState extends State<CirclesChatList> {
         title: const Text('Chats'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.groups_rounded),
+              text: 'Circles',
+            ),
+            Tab(
+              icon: Icon(Icons.person_rounded),
+              text: 'Direct',
+            ),
+          ],
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -72,19 +104,36 @@ class _CirclesChatListState extends State<CirclesChatList> {
           ),
         ),
         child: SafeArea(
-          child: _buildBody(),
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildCirclesTab(),
+              const DirectMessagesScreen(),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateCircleDialog,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New Circle'),
-        backgroundColor: const Color(0xFF6C5CE7),
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _tabController.index == 0
+            ? FloatingActionButton.extended(
+                key: const ValueKey('circles_fab'),
+                onPressed: _showCreateCircleDialog,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('New Circle'),
+                backgroundColor: const Color(0xFF6C5CE7),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('direct_fab'),
+                onPressed: _startNewDirectChat,
+                backgroundColor: const Color(0xFF6C5CE7),
+                child: const Icon(Icons.person_add_rounded, color: Colors.white),
+              ),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildCirclesTab() {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Colors.white),
@@ -155,7 +204,7 @@ class _CirclesChatListState extends State<CirclesChatList> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'No chats yet',
+                'No circles yet',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -163,7 +212,7 @@ class _CirclesChatListState extends State<CirclesChatList> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Create a circle first to start chatting',
+                'Create a circle to start group chats',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(0xFF636E72),
@@ -500,6 +549,42 @@ class _CirclesChatListState extends State<CirclesChatList> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${e.toString().contains('duplicate') ? 'User is already in this circle' : e}')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _startNewDirectChat() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UserSearchScreen(),
+      ),
+    );
+
+    if (result != null) {
+      // User selected someone to chat with, navigate to direct chat
+      try {
+        final directMessageService = DirectMessageService();
+        final conversationId = await directMessageService.getOrCreateConversation(result);
+        
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DirectChatScreen(
+                conversationId: conversationId,
+                otherUserName: 'User', // Will be updated in the chat screen
+                otherUserId: result,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error starting chat: $e')),
           );
         }
       }

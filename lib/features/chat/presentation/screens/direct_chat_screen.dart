@@ -1,0 +1,498 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/direct_message_service.dart';
+import '../../domain/models/message.dart';
+import 'package:intl/intl.dart';
+
+class DirectChatScreen extends StatefulWidget {
+  final String conversationId;
+  final String otherUserName;
+  final String otherUserId;
+
+  const DirectChatScreen({
+    super.key,
+    required this.conversationId,
+    required this.otherUserName,
+    required this.otherUserId,
+  });
+
+  @override
+  State<DirectChatScreen> createState() => _DirectChatScreenState();
+}
+
+class _DirectChatScreenState extends State<DirectChatScreen> {
+  final _directMessageService = DirectMessageService();
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  final supabase = Supabase.instance.client;
+  
+  List<Message> _messages = [];
+  bool _isLoading = true;
+  bool _isSending = false;
+  Message? _replyingTo;
+  RealtimeChannel? _channel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _subscribeToMessages();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    if (_channel != null) {
+      _directMessageService.unsubscribe(_channel!);
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadMessages() async {
+    try {
+      setState(() => _isLoading = true);
+      final messages = await _directMessageService.getDirectMessages(widget.conversationId);
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading messages: $e')),
+        );
+      }
+    }
+  }
+
+  void _subscribeToMessages() {
+    _channel = _directMessageService.subscribeToDirectMessages(
+      widget.conversationId,
+      (message) {
+        setState(() {
+          _messages.add(message);
+        });
+      },
+    );
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    final content = _messageController.text.trim();
+    _messageController.clear();
+
+    setState(() => _isSending = true);
+
+    try {
+      await _directMessageService.sendDirectMessage(
+        conversationId: widget.conversationId,
+        content: content,
+        replyToId: _replyingTo?.id,
+      );
+
+      setState(() {
+        _replyingTo = null;
+        _isSending = false;
+      });
+    } catch (e) {
+      setState(() => _isSending = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending message: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.otherUserName),
+            Text(
+              '${_messages.length} messages',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Messages List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _messages.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        controller: _scrollController,
+                        reverse: true, // Show latest messages at bottom
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          // Reverse the index to show messages in correct order
+                          final reversedIndex = _messages.length - 1 - index;
+                          final message = _messages[reversedIndex];
+                          final isMe = message.userId == supabase.auth.currentUser?.id;
+                          
+                          // Check if we should show avatar (first message from user in sequence)
+                          final showAvatar = reversedIndex == _messages.length - 1 ||
+                              _messages[reversedIndex + 1].userId != message.userId;
+                          
+                          return _buildMessageBubble(message, isMe, showAvatar);
+                        },
+                      ),
+          ),
+
+          // Reply Preview
+          if (_replyingTo != null) _buildReplyPreview(),
+
+          // Message Input
+          _buildMessageInput(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6C5CE7).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 64,
+              color: Color(0xFF6C5CE7),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'No messages yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start chatting with ${widget.otherUserName}!',
+            style: const TextStyle(
+              color: Color(0xFF636E72),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(Message message, bool isMe, bool showAvatar) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isMe && showAvatar)
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: const Color(0xFF6C5CE7).withOpacity(0.1),
+              backgroundImage: message.senderAvatar != null
+                  ? NetworkImage(message.senderAvatar!)
+                  : null,
+              child: message.senderAvatar == null
+                  ? Text(
+                      message.senderName?.substring(0, 1).toUpperCase() ?? '?',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6C5CE7),
+                      ),
+                    )
+                  : null,
+            )
+          else if (!isMe)
+            const SizedBox(width: 32),
+          
+          const SizedBox(width: 8),
+          
+          Flexible(
+            child: GestureDetector(
+              onLongPress: () => _showMessageOptions(message, isMe),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: isMe
+                      ? const LinearGradient(
+                          colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+                        )
+                      : null,
+                  color: isMe ? null : const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Show reply preview if this is a reply
+                    if (message.isReply)
+                      FutureBuilder<Message?>(
+                        future: _directMessageService.getDirectMessage(message.replyToId!),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data != null) {
+                            final repliedMsg = snapshot.data!;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isMe 
+                                    ? Colors.white.withOpacity(0.2)
+                                    : const Color(0xFF6C5CE7).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border(
+                                  left: BorderSide(
+                                    color: isMe ? Colors.white : const Color(0xFF6C5CE7),
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    repliedMsg.senderName ?? 'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isMe ? Colors.white : const Color(0xFF6C5CE7),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    repliedMsg.content,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isMe ? Colors.white70 : const Color(0xFF636E72),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    Text(
+                      message.content,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isMe ? Colors.white : const Color(0xFF2D3436),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTime(message.createdAt),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isMe ? Colors.white70 : const Color(0xFF636E72),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        border: Border(
+          top: BorderSide(color: Colors.grey[300]!),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to ${_replyingTo!.senderName ?? 'Unknown'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6C5CE7),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _replyingTo!.content,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF636E72),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20),
+            onPressed: () => setState(() => _replyingTo = null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF8F9FA),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              maxLines: null,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: _isSending
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded),
+              color: Colors.white,
+              onPressed: _isSending ? null : _sendMessage,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMessageOptions(Message message, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.reply_rounded),
+              title: const Text('Reply'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _replyingTo = message);
+              },
+            ),
+            if (isMe)
+              ListTile(
+                leading: const Icon(Icons.delete_rounded, color: Colors.red),
+                title: const Text('Delete', style: TextStyle(color: Colors.red)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _directMessageService.deleteDirectMessage(message.id);
+                  setState(() {
+                    _messages.removeWhere((m) => m.id == message.id);
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays == 0) {
+      return DateFormat('HH:mm').format(dateTime);
+    } else if (difference.inDays == 1) {
+      return 'Yesterday ${DateFormat('HH:mm').format(dateTime)}';
+    } else if (difference.inDays < 7) {
+      return DateFormat('EEE HH:mm').format(dateTime);
+    } else {
+      return DateFormat('MMM d, HH:mm').format(dateTime);
+    }
+  }
+}
